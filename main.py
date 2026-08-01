@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException,Query
 from sqlalchemy.orm import Session
 import models
 from models import Movies
@@ -6,6 +6,7 @@ from database import SessionLocal, engine
 from typing import Annotated, Literal,Optional
 from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
+from sqlalchemy import asc, desc
 
 
 app = FastAPI()
@@ -90,3 +91,23 @@ def delete_movie(db:db_dependency, movie_id: int):
     db.commit()
 
     return JSONResponse(status_code=200, content={'messege':'Movie deleted Successfully'})
+
+@app.get('/sort')
+def sorted_by(db:db_dependency ,sort_by: str = Query(default='rating', description='Sort on the basis of rating or duration'), order:str= Query(default='desc', description='Select between asc and desc')):
+    valid = ['rating', 'duration']
+
+    if sort_by not in valid:
+        raise HTTPException(status_code=400, detail=f'Invalid field, select from{valid}')
+
+    if order not in['asc','desc']:
+        raise HTTPException(status_code=400,detail='order must be acs or desc')
+
+    data = getattr(Movies, sort_by)
+
+    if order == 'asc':
+        movies = db.query(Movies).order_by(asc(data)).all()
+
+    else :
+        movies = db.query(Movies).order_by(desc(data)).all()
+
+    return movies
