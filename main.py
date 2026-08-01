@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import models
 from models import Movies
 from database import SessionLocal, engine
-from typing import Annotated, Literal
+from typing import Annotated, Literal,Optional
 from pydantic import BaseModel, Field
 from fastapi.responses import JSONResponse
 
@@ -30,6 +30,14 @@ class New_movie(BaseModel):
     duration : int = Field(gt=0)
     rating : float = Field(ge=0.0, le=5.0, description="Enter value from 0 to 5")
 
+class Update_movie(BaseModel):
+    title : Optional[str] = None
+    director : Optional[str] = Field(default=None,)
+    genre : Optional[Literal['action', 'comedy', 'drama', 'thriller']] = None
+    duration : Optional[int] = Field(default=None, gt=0)
+    rating : Optional[float] = Field(default=None, ge=0.0, le=5.0, description="Enter value from 0 to 5")
+ 
+
 @app.get('/movies')
 def movies(db: db_dependency):
     return db.query(Movies).all()
@@ -55,3 +63,30 @@ def new_movie(db: db_dependency, new_movie: New_movie):
         return JSONResponse(status_code=201, content={'message':'New Movie Added Successfully'})
     else:
         raise HTTPException(status_code=400, detail='This Movie all ready Exist')
+
+@app.put('/movies/{movie_id}')
+def update_data(db: db_dependency, movie_id: int, update_movie: Update_movie):
+    movie = db.query(Movies).filter(Movies.movie_id == movie_id).first()
+
+    if movie is None:
+        raise HTTPException(status_code=404, detail='Movie Not found')
+    update_data = update_movie.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(movie,key,value)
+
+    db.commit()
+
+    return JSONResponse(status_code=200, content={'messege':'Movie Uploaded Successfully'})
+@app.delete('/delete/{movie_id}')
+def delete_movie(db:db_dependency, movie_id: int):
+    movie = db.query(Movies).filter(Movies.movie_id == movie_id).first()
+
+    if movie is None:
+        raise HTTPException(status_code=404, detail='Movie not Found')
+
+    db.query(Movies).filter(Movies.movie_id == movie_id).delete()
+
+    db.commit()
+
+    return JSONResponse(status_code=200, content={'messege':'Movie deleted Successfully'})
