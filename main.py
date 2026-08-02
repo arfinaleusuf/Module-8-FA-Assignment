@@ -43,6 +43,25 @@ class Update_movie(BaseModel):
 def movies(db: db_dependency):
     return db.query(Movies).all()
 
+@app.get('/movies/sort')
+def sorted_by(db:db_dependency ,sort_by: str = Query(default='rating', description='Sort on the basis of rating or duration'), order:str= Query(default='desc', description='Select between asc and desc')):
+    valid = ['rating', 'duration']
+
+    if sort_by not in valid:
+        raise HTTPException(status_code=400, detail=f'Invalid field, select from {valid}')
+
+    if order not in['asc','desc']:
+        raise HTTPException(status_code=400,detail='order must be asc or desc')
+
+    data = getattr(Movies, sort_by)
+
+    if order == 'asc':
+        movies = db.query(Movies).order_by(asc(data)).all()
+
+    else :
+        movies = db.query(Movies).order_by(desc(data)).all()
+
+    return movies
 
 @app.get('/movies/{movie_id}')
 def single_movie(db: db_dependency, movie_id: int):
@@ -61,7 +80,7 @@ def new_movie(db: db_dependency, new_movie: New_movie):
         new_movie_model = Movies(**new_movie.model_dump())
         db.add(new_movie_model)
         db.commit()
-        return JSONResponse(status_code=201, content={'message':'New Movie Added Successfully'})
+        return JSONResponse(status_code=201, content={'message':'New Movie Added Successfully','movie': new_movie.model_dump()})
     else:
         raise HTTPException(status_code=400, detail='This Movie all ready Exist')
 
@@ -78,8 +97,10 @@ def update_data(db: db_dependency, movie_id: int, update_movie: Update_movie):
 
     db.commit()
 
-    return JSONResponse(status_code=200, content={'messege':'Movie Uploaded Successfully'})
-@app.delete('/delete/{movie_id}')
+    return JSONResponse(status_code=200, content={'messege':'Movie Updated Successfully', 'updated movie': {"movie_id": movie.movie_id,"title": movie.title,"director": movie.director,"genre": movie.genre,"duration": movie.duration,"rating": movie.rating}})
+
+
+@app.delete('/movies/{movie_id}')
 def delete_movie(db:db_dependency, movie_id: int):
     movie = db.query(Movies).filter(Movies.movie_id == movie_id).first()
 
@@ -91,23 +112,3 @@ def delete_movie(db:db_dependency, movie_id: int):
     db.commit()
 
     return JSONResponse(status_code=200, content={'messege':'Movie deleted Successfully'})
-
-@app.get('/sort')
-def sorted_by(db:db_dependency ,sort_by: str = Query(default='rating', description='Sort on the basis of rating or duration'), order:str= Query(default='desc', description='Select between asc and desc')):
-    valid = ['rating', 'duration']
-
-    if sort_by not in valid:
-        raise HTTPException(status_code=400, detail=f'Invalid field, select from{valid}')
-
-    if order not in['asc','desc']:
-        raise HTTPException(status_code=400,detail='order must be acs or desc')
-
-    data = getattr(Movies, sort_by)
-
-    if order == 'asc':
-        movies = db.query(Movies).order_by(asc(data)).all()
-
-    else :
-        movies = db.query(Movies).order_by(desc(data)).all()
-
-    return movies
