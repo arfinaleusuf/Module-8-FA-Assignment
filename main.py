@@ -97,7 +97,7 @@ def update_data(db: db_dependency, movie_id: int, update_movie: Update_movie):
 
     db.commit()
 
-    return JSONResponse(status_code=200, content={'messege':'Movie Updated Successfully', 'updated movie': {"movie_id": movie.movie_id,"title": movie.title,"director": movie.director,"genre": movie.genre,"duration": movie.duration,"rating": movie.rating}})
+    return JSONResponse(status_code=200, content={'message':'Movie Updated Successfully', 'updated movie': {"movie_id": movie.movie_id,"title": movie.title,"director": movie.director,"genre": movie.genre,"duration": movie.duration,"rating": movie.rating}})
 
 
 @app.delete('/movies/{movie_id}')
@@ -111,4 +111,4 @@ def delete_movie(db:db_dependency, movie_id: int):
 
     db.commit()
 
-    return JSONResponse(status_code=200, content={'messege':'Movie deleted Successfully'})
+    return JSONResponse(status_code=200, content={'message':'Movie deleted Successfully'})
